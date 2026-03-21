@@ -22,16 +22,18 @@ def readDict(path):
 class Sharder(object):
   def __init__(self, dataDict, targetNumItemsPerShard, keyStart = 0):
     # allocate some data
-    self.children = {}
     self.rootItems = {}
     # choose sizes
     self.targetNumItemsPerShard = targetNumItemsPerShard
     numShards = int(len(dataDict) / targetNumItemsPerShard) + 1
     numChars = int(math.log(numShards) / math.log(64)) + 1
+    if len(dataDict) > numShards:
+      self.children = {}
+    else:
+      self.children = None 
+      numChars = 0 # don't need more children
     self.childKeyStart = keyStart 
     self.childKeyEnd = keyStart + numChars
-    if self.childKeyEnd <= self.childKeyStart:
-      raise Exception("child keys " + str(self.childKeyStart) + ":" + str(self.childKeyEnd))
     # save data
     self.putAll(dataDict)
 
@@ -50,7 +52,10 @@ class Sharder(object):
     contentByKey = collections.defaultdict(lambda: {})
     for name, value in dataDict.items():
       key = self.getNextKey(name)
-      contentByKey[key][name] = value
+      if key == "":
+        self.rootItems[key] = value
+      else:
+        contentByKey[key][name] = value
     print("Split " + str(len(dataDict)) + " items into " + str(len(contentByKey)) + " children")
     # pass items to children
     for key, contents in contentByKey.items():
@@ -61,22 +66,23 @@ class Sharder(object):
 
   def write(self, destDir, name = "."):
     os.makedirs(destDir, exist_ok = True)
-    destFile = destDir + "/data.js"
+    destFile = destDir + "/data.json"
 
     lines = [
-      "shards['" + name + "'] = {}",
-      "shards['" + name + "']['s'] = " + str(self.childKeyStart),
-      "shards['" + name + "']['e'] = " + str(self.childKeyEnd),
-      "shards['" + name + "']['c'] = " + self.formatRootItems(),
-      "\n"
+      '{',
     ]
+    lines.append('  "start": ' + str(self.childKeyStart) + ',')
+    lines.append('  "end": ' + str(self.childKeyEnd) + ",")
+    lines.append('  "contents": ' + self.formatRootItems())
+    lines.append('}')
     text = "\n".join(lines)
     with open(destFile, 'w') as f:
       f.write(text)
-    for childKey, child in self.children.items():
-      subdir = destDir + "/" + childKey
-      childName = name + "/" + childKey
-      child.write(subdir, childName)
+    if self.children is not None:
+      for childKey, child in self.children.items():
+        subdir = destDir + "/" + childKey
+        childName = name + "/" + childKey
+        child.write(subdir, childName)
 
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
