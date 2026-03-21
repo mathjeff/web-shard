@@ -20,12 +20,12 @@ def readDict(path):
 
 # splits information into shards
 class Sharder(object):
-  def __init__(self, dataDict, targetNumItemsPerShard, keyStart = 0):
+  def __init__(self, dataDict, targetNumEntriesPerShard, keyStart = 0):
     # allocate some data
     self.rootItems = {}
     # choose sizes
-    self.targetNumItemsPerShard = targetNumItemsPerShard
-    numShards = int(len(dataDict) / targetNumItemsPerShard) + 1
+    self.targetNumEntriesPerShard = targetNumEntriesPerShard
+    numShards = int(len(dataDict) / targetNumEntriesPerShard) + 1
     numChars = int(math.log(numShards) / math.log(64)) + 1
     if len(dataDict) > numShards:
       self.children = {}
@@ -38,7 +38,7 @@ class Sharder(object):
     self.putAll(dataDict)
 
   def putAll(self, dataDict):
-    if len(dataDict) <= self.targetNumItemsPerShard:
+    if len(dataDict) <= self.targetNumEntriesPerShard:
       self.saveInSelf(dataDict)
     else:
       self.saveInChildren(dataDict)
@@ -59,7 +59,7 @@ class Sharder(object):
     print("Split " + str(len(dataDict)) + " items into " + str(len(contentByKey)) + " children")
     # pass items to children
     for key, contents in contentByKey.items():
-      self.children[key] = Sharder(contents, self.targetNumItemsPerShard, self.childKeyEnd)
+      self.children[key] = Sharder(contents, self.targetNumEntriesPerShard, self.childKeyEnd)
 
   def formatRootItems(self):
     return json.dumps(self.rootItems)
@@ -87,7 +87,7 @@ class Sharder(object):
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
 
-def run(inputFile, outputDir, overwrite):
+def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
   if os.path.exists(outputDir):
     if overwrite:
       shutil.rmtree(outputDir)
@@ -97,7 +97,6 @@ def run(inputFile, outputDir, overwrite):
   print("loading " + inputFile)
   data = readDict(inputFile)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
-  targetNumEntriesPerShard = 2
   print("encoding keys")
   encoded = {}
   for key, value in data.items():
@@ -114,6 +113,7 @@ def main(args):
   inputFile = None
   outputDir = None
   overwrite = False
+  numEntriesPerShard = 4096
   while len(args) > 0:
     arg = args[0]
     args = args[1:]
@@ -128,12 +128,18 @@ def main(args):
     if arg == "--overwrite":
       overwrite = True
       continue
+    if arg == "--entries-per-shard":
+      numEntriesPerShard = int(args[0])
+      args = args[1:]
+      continue
     raise Exception("Unrecognized argument " + arg)
   if inputFile is None:
     usage("--input-data is required")
   if outputDir is None:
     usage("--out-site is required")
-  run(inputFile, outputDir, overwrite)
+  if numEntriesPerShard is None:
+    usage("--entries-per-shard is required")
+  run(inputFile, outputDir, numEntriesPerShard, overwrite)
 
 if __name__ == "__main__":
   main(sys.argv[1:])

@@ -23,11 +23,11 @@ class ShardLoader {
 
   async #loadOneEntryEncoded(name, logger) {
     await this.#ensureLoaded(logger)
-    let nextKey = this.#getNextKey(name)
-    if (nextKey.length < 1) {
-      // no more children to check so the node with this information must be this one
-      return this.rootItems[name]
+    let rootResult = this.rootItems[name]
+    if (rootResult != null) {
+      return rootResult
     }
+    let nextKey = this.#getNextKey(name)
     let child = this.#getChild(name)
     return child.#loadOneEntryEncoded(name, logger)
   }
