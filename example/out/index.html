@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+  <script type="text/javascript" src="loader.js"></script>
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+      console.log("domLoaded")
+      loader = new ShardLoader("data")
+      function display(text) {
+        document.getElementById("log").innerHTML += text + "<p/>"
+      }
+      document.getElementById("load-one-screen").onclick = function() {
+        loader.getOneEntry("one", display)
+      }
+      document.getElementById("load-one-console").onclick = function() {
+        loader.getOneEntry("one", console.log)
+      }
+      document.getElementById("load-two-screen").onclick = function() {
+        loader.getOneEntry("two", display)
+      }
+      document.getElementById("load-two-console").onclick = function() {
+        loader.getOneEntry("two", console.log)
+      }
+    })
+  </script>
+  <div id="content">
+    <div id="controls">
+      <button id="load-one-screen">load data["one"] and log to screen</button>
+      <button id="load-one-console">load data["one"] and log to console</button>
+      <button id="load-two-screen">load data["two"] and log to screen</button>
+      <button id="load-two-console">load data["two"] and log to console</button>
+    </div>
+    <div id="log">
+    </div>
+    <div id="reminder">
+      Refresh the page to clear the log
+    </div>
+  </div>
+</html>
+

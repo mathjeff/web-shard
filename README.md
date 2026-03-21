@@ -7,5 +7,5 @@ Usage looks like this:
 * Create a ShardLoader like `loader = new ShardLoader("dataSubdir")`
 * Query a ShardLoader like `loader.getOneEntry("key", optionalLogger)`
 
-See examples/ for an example
-
+See ./demo.sh for an example of how to generate the data files
+See example/src/index.html for an example of how to use these data files from javascript
