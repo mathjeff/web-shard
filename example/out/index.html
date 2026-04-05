@@ -9,16 +9,16 @@
         document.getElementById("log").innerHTML += text + "<p/>"
       }
       document.getElementById("load-one-screen").onclick = function() {
-        loader.getOneEntry("one", display)
+        loader.get("one", display)
       }
       document.getElementById("load-one-console").onclick = function() {
-        loader.getOneEntry("one", console.log)
+        loader.get("one", console.log)
       }
       document.getElementById("load-two-screen").onclick = function() {
-        loader.getOneEntry("two", display)
+        loader.get("two", display)
       }
       document.getElementById("load-two-console").onclick = function() {
-        loader.getOneEntry("two", console.log)
+        loader.get("two", console.log)
       }
     })
   </script>

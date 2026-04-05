@@ -5,7 +5,7 @@ class ShardLoader {
     this.childKeys = null
     this.children = {}
   }
-  async getOneEntry(name, logger) {
+  async get(name, logger) {
     if (logger) {
       logger("ShardLoader getting " + name)
     }
@@ -13,20 +13,20 @@ class ShardLoader {
     if (logger) {
       logger("ShardLoader encoded " + name + " as " + encoded)
     }
-    let result = await this.#loadOneEntryEncoded(encoded, logger)
+    let result = await this.#loadEncoded(encoded, logger)
     if (logger) {
-      logger("ShardLoader.loadOneEntry(" + name + ") = " + result)
+      logger("ShardLoader.load(" + name + ") = " + result)
     }
     return result
   }
 
-  async #loadOneEntryEncoded(name, logger) {
+  async #loadEncoded(name, logger) {
     await this.#ensureLoaded(logger)
     if (this.rootItems.length > 0) {
       return this.#loadRootEntryEncoded(name, logger)
     }
     let child = this.#getChild(name)
-    return child.#loadOneEntryEncoded(name, logger)
+    return child.#loadEncoded(name, logger)
   }
 
   #loadRootEntryEncoded(name, logger) {
