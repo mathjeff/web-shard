@@ -13,23 +13,23 @@ class ShardLoader {
     if (logger) {
       logger("ShardLoader encoded " + name + " as " + encoded)
     }
-    let result = await this.#loadEncoded(encoded, logger)
+    let result = await this.#getEncoded(encoded, logger)
     if (logger) {
       logger("ShardLoader.load(" + name + ") = " + result)
     }
     return result
   }
 
-  async #loadEncoded(name, logger) {
+  async #getEncoded(name, logger) {
     await this.#ensureLoaded(logger)
     if (this.rootItems.length > 0) {
-      return this.#loadRootEntryEncoded(name, logger)
+      return this.#getRootEntryEncoded(name, logger)
     }
     let child = this.#getChild(name)
-    return child.#loadEncoded(name, logger)
+    return child.#getEncoded(name, logger)
   }
 
-  #loadRootEntryEncoded(name, logger) {
+  #getRootEntryEncoded(name, logger) {
     for (var entry of this.rootItems) {
       let candidateName = entry[0]
       if (candidateName == name)
