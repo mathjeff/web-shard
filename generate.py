@@ -96,14 +96,13 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
   print("sorting")
   sortedKeys = sorted(data.keys())
-  print("encoding keys")
-  encoded = []
+  print("building entries")
+  entries = []
   for key in sortedKeys:
-    encodedKey = base64.b64encode(key.encode('utf-8')).decode('ascii')
     value = data[key]
-    encoded.append((encodedKey, value))
+    entries.append((key, value))
   print("Building tree")
-  sharder = Sharder(encoded, targetNumEntriesPerShard)
+  sharder = Sharder(entries, targetNumEntriesPerShard)
   print("saving")
   sharder.write(outputDir)
   print("saved results to " + str(outputDir))

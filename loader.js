@@ -212,8 +212,8 @@ class ShardLoader {
       }
 
       let data = await this.#getData(url)
-      this.rootItems = this.#decodeKeys(data["contents"])
-      this.childKeys = this.#decodeList(data["childKeys"])
+      this.rootItems = data["contents"]
+      this.childKeys = data["childKeys"]
       this.children = {}
       if (logger) {
         logger("rootItems.length = " + this.rootItems.length + " in " + this.baseurl)
