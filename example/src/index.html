@@ -5,29 +5,35 @@
     document.addEventListener("DOMContentLoaded", function() {
       console.log("domLoaded")
       loader = new ShardLoader("data")
+      document.getElementById("queryText").value = "ten"
+      document.getElementById("countBefore").value = "1"
+      document.getElementById("countAfter").value = "1"
       function display(text) {
         document.getElementById("log").innerHTML += text + "<p/>"
       }
-      document.getElementById("load-one-screen").onclick = function() {
-        loader.get("one", display)
+      function doLookup(queryText, countBefore, countAfter) {
+        loader.getNeighborhood(queryText, countBefore, countAfter, display)
       }
-      document.getElementById("load-one-console").onclick = function() {
-        loader.get("one", console.log)
-      }
-      document.getElementById("load-two-screen").onclick = function() {
-        loader.get("two", display)
-      }
-      document.getElementById("load-two-console").onclick = function() {
-        loader.get("two", console.log)
+      document.getElementById("queryButton").onclick = function() {
+        queryText = document.getElementById("queryText").value
+        countBefore = document.getElementById("countBefore").value
+        countAfter = document.getElementById("countAfter").value
+        doLookup(queryText, countBefore, countAfter)
       }
     })
   </script>
   <div id="content">
     <div id="controls">
-      <button id="load-one-screen">load data["one"] and log to screen</button>
-      <button id="load-one-console">load data["one"] and log to console</button>
-      <button id="load-two-screen">load data["two"] and log to screen</button>
-      <button id="load-two-console">load data["two"] and log to console</button>
+      <div>Query Text:
+        <input type="text" id="queryText"/>
+      </div>
+      <div>Request count before:
+        <input type="text" id="countBefore"/>
+      </div>
+      <div>Request count after:
+        <input type="text" id="countAfter"/>
+      </div>
+      <button id="queryButton">run query</button>
     </div>
     <div id="log">
     </div>
@@ -36,4 +42,3 @@
     </div>
   </div>
 </html>
-

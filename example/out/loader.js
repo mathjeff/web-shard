@@ -1,10 +1,13 @@
 class ShardLoader {
+  // Represents a TreeMap<String, Object>
   constructor(baseurl) {
     this.baseurl = baseurl
     this.rootItems = null
     this.childKeys = null
     this.children = {}
   }
+
+  // returns the item with key `name`, or null if none exists
   async get(name, logger) {
     if (logger) {
       logger("ShardLoader getting " + name)
@@ -20,13 +23,158 @@ class ShardLoader {
     return result
   }
 
-  async #getEncoded(name, logger) {
-    await this.#ensureLoaded(logger)
-    if (this.rootItems.length > 0) {
-      return this.#getRootEntryEncoded(name, logger)
+  // finds the entries having keys near `name` and returns their values
+  async getNeighborhood(name, numBefore, numAfter, logger) {
+    if (logger) {
+      logger("ShardLoader getting " + numBefore + " items before and " + numAfter + " items after " + name)
     }
-    let child = this.#getChild(name)
-    return child.#getEncoded(name, logger)
+    let encoded = btoa(name)
+    if (logger) {
+      logger("ShardLoader encoded " + name + " as " + encoded)
+    }
+    let before = await this.#getNeighborhoodEncodedBefore(encoded, numBefore, logger)
+    let after = await this.#getNeighborhoodEncodedAfter(encoded, numAfter, logger)
+    var result = []
+    for (var item of before) {
+      result.push(item)
+    }
+    for (var item of after) {
+      result.push(item)
+    }
+    if (logger) {
+      logger("ShardLoader.getNeighborhood(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
+      logger(result)
+    }
+    return result
+  }
+
+  // finds the entries having keys equal to or before `name` and returns their values
+  async #getNeighborhoodEncodedBefore(encoded, count, logger) {
+    await this.#ensureLoaded(logger)
+    var results = []
+    if (this.rootItems.length > 0) {
+      let endIndex = await this.#getRootIndexBefore(encoded, logger) + 1
+      let startIndex = endIndex - count
+      if (startIndex < 0)
+        startIndex = 0
+      results = await this.#getValueRange(startIndex, endIndex, logger)
+    } else {
+      let childIndex = this.#getChildIndex(encoded)
+      while (true) {
+        if (results.length >= count) {
+          break
+        }
+        if (childIndex < 0) {
+          break
+        }
+        let child = this.#getChildByIndex(childIndex)
+        let newResults = await child.#getNeighborhoodEncodedBefore(encoded, count - results.length, logger)
+        results = newResults.concat(results)
+        childIndex -= 1
+      }
+    }
+    if (logger) {
+      logger("ShardLoader.getNeighborhoodEncodedBefore(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
+      logger(results)
+    }
+    return results
+  }
+
+  // finds the entries having keys after `name` and returns their values
+  async #getNeighborhoodEncodedAfter(encoded, count, logger) {
+    await this.#ensureLoaded(logger)
+    var results = []
+    if (this.rootItems.length > 0) {
+      let startIndex = await this.#getRootIndexBefore(encoded, logger) + 1
+      let endIndex = startIndex + count
+      if (endIndex > this.rootItems.length)
+        endIndex = this.rootItems.length
+      results = await this.#getValueRange(startIndex, endIndex, logger)
+    } else {
+      let childIndex = this.#getChildIndex(encoded)
+      while (true) {
+        if (results.length >= count) {
+          break
+        }
+        if (childIndex >= this.childKeys.length) {
+          break
+        }
+        let child = this.#getChildByIndex(childIndex)
+        let newResults = await child.#getNeighborhoodEncodedAfter(encoded, count - results.length, logger)
+        results = results.concat(newResults)
+        childIndex += 1
+      }
+    }
+    if (logger) {
+      logger("ShardLoader.getNeighborhoodEncodedAfter(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
+      logger(results)
+    }
+    return results
+  }
+
+  async #getValueRange(startInclusive, endExclusive, logger) {
+    await this.#ensureLoaded(logger)
+    let results = []
+    for (var i = startInclusive; i < endExclusive; i++) {
+      results.push(this.rootItems[i][1])
+    }
+    return results
+  }
+
+  // returns the index of the item before the given item
+  async #getRootIndexBefore(encoded, count, logger) {
+    await this.#ensureLoaded(logger)
+    if (this.rootItems.length < 1) {
+      return -1
+    }
+    if (encoded < this.rootItems[0][0]) {
+      return -1
+    }
+    if (encoded >= this.rootItems[this.rootItems.length - 1][0]) {
+      return this.rootItems.length - 1
+    }
+    var lowIndex = 0
+    var highIndex = this.rootItems.length
+    while (highIndex > lowIndex) {
+      let middleIndex = int((lowIndex + highIndex) / 2)
+      let candidate = this.rootItems[middleIndex][0]
+      if (encoded == candidate) {
+        return middleIndex
+      }
+      if (encoded < candidate) {
+        highIndex = middleIndex
+      } else {
+        lowIndex = middleIndex
+      }
+    }
+  }
+
+  #getChildIndex(name) {
+    for (var i = 0; i < this.childKeys.length; i++) {
+      if (this.childKeys[i] >= name)
+        return i
+    }
+    return this.childKeys.length - 1
+  }
+
+  #getChildByIndex(index) {
+    let child = this.children[index]
+    if (child == null) {
+      child = new ShardLoader(this.baseurl + "/" + index)
+      this.children[index] = child
+    }
+    if (child == null) {
+      throw new Error("child with index " + index + " not found")
+    }
+    return child
+  }
+
+  #getChild(name) {
+    let index = this.#getChildIndex(name)
+    if (index == null) {
+      return null
+    }
+    return this.#getChildByIndex(index)
   }
 
   #getRootEntryEncoded(name, logger) {
@@ -38,25 +186,18 @@ class ShardLoader {
     return null
   }
 
-  #getChild(name) {
-    let key = this.#getChildIndex(name)
-    if (key == null) {
-      return null;
+  async #getData(url) {
+    try {
+      let response = await fetch(url)
+      if (!response.ok) {
+        throw new Error("Failed to load data from " + url + ": " + response.status)
+      }
+      let json = await response.json();
+      return json 
+    } catch (e) {
+      console.log(e)
+      throw e
     }
-    let child = this.children[key]
-    if (child == null) {
-      child = new ShardLoader(this.baseurl + "/" + key)
-      this.children[key] = child
-    }
-    return child
-  }
-
-  #getChildIndex(name) {
-    for (var i = 0; i < this.childKeys.length; i++) {
-      if (this.childKeys[i] >= name)
-        return i
-    }
-    return null;
   }
 
   async #ensureLoaded(logger) {
@@ -70,28 +211,24 @@ class ShardLoader {
         logger("ShardLoader fetching " + url)
       }
 
-      let data = await this.getData(url)
+      let data = await this.#getData(url)
       this.rootItems = data["contents"]
       this.childKeys = data["childKeys"]
       this.children = {}
       if (logger) {
         logger("rootItems.length = " + this.rootItems.length + " in " + this.baseurl)
-        logger("num child keys  =" + this.children.length + " in " + this.baseurl)
+        logger("num child keys = " + this.children.length + " in " + this.baseurl)
       }
     }
   }
 
-  async getData(url) {
-    try {
-      let response = await fetch(url)
-      if (!response.ok) {
-        throw new Error("Failed to load data from " + url + ": " + response.status)
-      }
-      let json = await response.json();
-      return json 
-    } catch (e) {
-      console.log(e)
-      throw e
+  async #getEncoded(name, logger) {
+    await this.#ensureLoaded(logger)
+    if (this.rootItems.length > 0) {
+      return this.#getRootEntryEncoded(name, logger)
     }
+    let child = this.#getChild(name)
+    return child.#getEncoded(name, logger)
   }
+
 }
