@@ -39,7 +39,7 @@ class ShardLoader {
   }
 
   #getChild(name) {
-    let key = this.#getChildKey(name)
+    let key = this.#getChildIndex(name)
     if (key == null) {
       return null;
     }
@@ -51,7 +51,7 @@ class ShardLoader {
     return child
   }
 
-  #getChildKey(name) {
+  #getChildIndex(name) {
     for (var i = 0; i < this.childKeys.length; i++) {
       if (this.childKeys[i] >= name)
         return i
