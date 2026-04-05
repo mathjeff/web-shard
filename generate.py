@@ -94,13 +94,14 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
   print("loading " + inputFile)
   data = readDict(inputFile)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
+  print("sorting")
+  sortedKeys = sorted(data.keys())
   print("encoding keys")
   encoded = []
-  for key, value in data.items():
+  for key in sortedKeys:
     encodedKey = base64.b64encode(key.encode('utf-8')).decode('ascii')
+    value = data[key]
     encoded.append((encodedKey, value))
-  print("Sorting")
-  encoded.sort(key = lambda x: x[0])
   print("Building tree")
   sharder = Sharder(encoded, targetNumEntriesPerShard)
   print("saving")

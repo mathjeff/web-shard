@@ -12,7 +12,7 @@ class ShardLoader {
     if (logger) {
       logger("ShardLoader getting " + name)
     }
-    let encoded = btoa(name)
+    let encoded = name
     if (logger) {
       logger("ShardLoader encoded " + name + " as " + encoded)
     }
@@ -28,7 +28,7 @@ class ShardLoader {
     if (logger) {
       logger("ShardLoader getting " + numBefore + " items before and " + numAfter + " items after " + name)
     }
-    let encoded = btoa(name)
+    let encoded = name
     if (logger) {
       logger("ShardLoader encoded " + name + " as " + encoded)
     }
@@ -212,8 +212,8 @@ class ShardLoader {
       }
 
       let data = await this.#getData(url)
-      this.rootItems = data["contents"]
-      this.childKeys = data["childKeys"]
+      this.rootItems = this.#decodeKeys(data["contents"])
+      this.childKeys = this.#decodeList(data["childKeys"])
       this.children = {}
       if (logger) {
         logger("rootItems.length = " + this.rootItems.length + " in " + this.baseurl)
@@ -231,4 +231,21 @@ class ShardLoader {
     return child.#getEncoded(name, logger)
   }
 
+  #decodeKeys(items) {
+    let results = []
+    for (let key of items) {
+      let decodedKey = atob(key[0])
+      let value = key[1]
+      results.push([decodedKey, value])
+    }
+    return results
+  }
+
+  #decodeList(items) {
+    let results = []
+    for (let item of items) {
+      results.push(atob(item))
+    }
+    return results
+  }
 }
