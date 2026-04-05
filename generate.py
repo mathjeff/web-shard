@@ -20,69 +20,66 @@ def readDict(path):
 
 # splits information into shards
 class Sharder(object):
-  def __init__(self, dataDict, targetNumEntriesPerShard, keyStart = 0):
-    # allocate some data
-    self.rootItems = {}
+  # dataList is expected to be sorted
+  def __init__(self, dataList, targetNumEntriesPerShard):
+    # List<Pair<Key, Value>>
+    self.rootItems = []
+    self.children = []
+    self.minKey = dataList[0][0]
+    self.maxKey = dataList[-1][0]
     # choose sizes
     self.targetNumEntriesPerShard = targetNumEntriesPerShard
-    numShards = int(len(dataDict) / targetNumEntriesPerShard) + 1
-    numChars = int(math.log(numShards) / math.log(64)) + 1
-    if len(dataDict) > numShards:
-      self.children = {}
+    self.putAll(dataList)
+
+  def putAll(self, dataList):
+    if len(dataList) <= self.targetNumEntriesPerShard:
+      self.saveInSelf(dataList)
     else:
-      self.children = None 
-      numChars = 0 # don't need more children
-    self.childKeyStart = keyStart 
-    self.childKeyEnd = keyStart + numChars
-    # save data
-    self.putAll(dataDict)
+      self.saveInChildren(dataList)
 
-  def putAll(self, dataDict):
-    if len(dataDict) <= self.targetNumEntriesPerShard:
-      self.saveInSelf(dataDict)
-    else:
-      self.saveInChildren(dataDict)
+  def saveInSelf(self, dataList):
+    self.rootItems = dataList
 
-  def saveInSelf(self, dataDict):
-    self.rootItems = dataDict
-
-  def saveInChildren(self, dataDict):
-    print("Splitting " + str(len(dataDict)) + " items into children")
-    # group items by child
-    contentByKey = collections.defaultdict(lambda: {})
-    for name, value in dataDict.items():
-      key = self.getNextKey(name)
-      if key == "":
-        self.rootItems[key] = value
-      else:
-        contentByKey[key][name] = value
-    print("Split " + str(len(dataDict)) + " items into " + str(len(contentByKey)) + " children")
-    # pass items to children
-    for key, contents in contentByKey.items():
-      self.children[key] = Sharder(contents, self.targetNumEntriesPerShard, self.childKeyEnd)
+  def saveInChildren(self, dataList):
+    print("Splitting " + str(len(dataList)) + " items into about " + str(self.targetNumEntriesPerShard) + " children")
+    # estimate the number of nodes we need for this amount of data
+    requiredDepth = int(math.log(len(dataList), self.targetNumEntriesPerShard) + 1)
+    # try to put about the same amount of data in each node
+    numChildren = int(math.pow(len(dataList), 1 / requiredDepth) + 1)
+    childStart = 0
+    for i in range(numChildren):
+      childEnd = int(len(dataList) * (i + 1) / numChildren)
+      childContents = dataList[childStart:childEnd]
+      self.children.append(Sharder(childContents, self.targetNumEntriesPerShard))
+      childStart = childEnd
+    print("Split " + str(len(dataList)) + " items into " + str(len(self.children)) + " children")
 
   def formatRootItems(self):
     return json.dumps(self.rootItems)
 
-  def write(self, destDir, name = "."):
+  def formatChildKeys(self):
+    keys = []
+    if len(self.children) > 0:
+      keys = [child.maxKey for child in self.children]
+    return json.dumps(keys)
+
+  def write(self, destDir):
     os.makedirs(destDir, exist_ok = True)
     destFile = destDir + "/data.json"
 
     lines = [
       '{',
     ]
-    lines.append('  "start": ' + str(self.childKeyStart) + ',')
-    lines.append('  "end": ' + str(self.childKeyEnd) + ",")
+    lines.append('  "childKeys": ' + self.formatChildKeys() + ",")
     lines.append('  "contents": ' + self.formatRootItems())
     lines.append('}')
     text = "\n".join(lines)
     with open(destFile, 'w') as f:
       f.write(text)
-    if self.children is not None:
-      for childKey, child in self.children.items():
-        subdir = destDir + "/" + childKey
-        childName = name + "/" + childKey
-        child.write(subdir, childName)
+    for i in range(len(self.children)):
+      child = self.children[i]
+      subdir = destDir + "/" + str(i)
+      child.write(subdir)
 
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
@@ -98,11 +95,13 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
   data = readDict(inputFile)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
   print("encoding keys")
-  encoded = {}
+  encoded = []
   for key, value in data.items():
     encodedKey = base64.b64encode(key.encode('utf-8')).decode('ascii')
-    encoded[encodedKey] = value
-  print("hashing and grouping")
+    encoded.append((encodedKey, value))
+  print("Sorting")
+  encoded.sort(key = lambda x: x[0])
+  print("Building tree")
   sharder = Sharder(encoded, targetNumEntriesPerShard)
   print("saving")
   sharder.write(outputDir)
