@@ -214,16 +214,22 @@ class ShardLoader {
       if (!response.ok) {
         throw new Error("Failed to load data from " + url + ": " + response.status)
       }
-      let json = await response.json();
-      return json 
+      let decompressedResponse = await this.decompressResponse(response)
+      return await decompressedResponse.json()
     } catch (e) {
       console.log(e)
       throw e
     }
   }
 
+  async decompressResponse(response) {
+    let compressedBlob = await response.blob()
+    let content = await compressedBlob.stream().pipeThrough(new DecompressionStream("gzip"))
+    return await new Response(content)
+  }
+
   async #ensureLoaded(logger) {
-    let url = this.baseurl + "/data.json"
+    let url = this.baseurl + "/data.json.gz"
     if (this.rootItems != null) {
       if (logger) {
         logger("Already loaded " + url)

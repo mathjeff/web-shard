@@ -1,6 +1,6 @@
 #!python
 
-import base64, collections, json, math, os, shutil, sys
+import base64, collections, gzip, json, math, os, shutil, sys
 
 def usage(message = None):
   print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite]")
@@ -65,7 +65,7 @@ class Sharder(object):
 
   def write(self, destDir):
     os.makedirs(destDir, exist_ok = True)
-    destFile = destDir + "/data.json"
+    destFile = destDir + "/data.json.gz"
 
     lines = [
       '{',
@@ -74,7 +74,7 @@ class Sharder(object):
     lines.append('  "contents": ' + self.formatRootItems())
     lines.append('}')
     text = "\n".join(lines)
-    with open(destFile, 'w') as f:
+    with gzip.open(destFile, 'wt') as f:
       f.write(text)
     for i in range(len(self.children)):
       child = self.children[i]
