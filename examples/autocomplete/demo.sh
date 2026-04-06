@@ -6,7 +6,7 @@ repoRoot="../../"
 
 $repoRoot/generate.py --input-data $projectRoot/src/data.json --out-site $projectRoot/out/data --overwrite --entries-per-shard 4
 cp $repoRoot/web-shard.js $projectRoot/out/
-cp $repoRoot/deps/autoComplete.min.js $projectRoot/out/
+cp $projectRoot/../deps/autoComplete.min.js $projectRoot/out/
 cp $projectRoot/src/index.html $projectRoot/out/
 
 
