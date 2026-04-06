@@ -1,1 +1,5 @@
-autocomplete.min.js from https://github.com/TarekRaafat/autoComplete.js/releases/tag/v10.2.9
+These files from https://github.com/TarekRaafat/autoComplete.js/releases/tag/v10.2.9 :
+  ./autoComplete.css
+  ./autoComplete.min.js
+  ./images/magnifier.svg
+  ./images/search.svg
