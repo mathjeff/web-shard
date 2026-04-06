@@ -154,7 +154,7 @@ class ShardLoader {
     var lowIndex = 0
     var highIndex = this.rootItems.length
     while (highIndex > lowIndex) {
-      let middleIndex = int((lowIndex + highIndex) / 2)
+      let middleIndex = Math.floor((lowIndex + highIndex) / 2)
       let candidate = this.rootItems[middleIndex][0]
       if (encoded == candidate) {
         return middleIndex
