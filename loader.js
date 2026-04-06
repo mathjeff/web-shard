@@ -153,18 +153,22 @@ class ShardLoader {
     }
     var lowIndex = 0
     var highIndex = this.rootItems.length
-    while (highIndex > lowIndex) {
+    while (highIndex >= lowIndex) {
       let middleIndex = Math.floor((lowIndex + highIndex) / 2)
       let candidate = this.rootItems[middleIndex][0]
       if (encoded == candidate) {
         return middleIndex
       }
       if (encoded < candidate) {
-        highIndex = middleIndex
+        highIndex = middleIndex - 1
       } else {
-        lowIndex = middleIndex
+        lowIndex = middleIndex + 1
       }
     }
+    let lastCandidate = this.rootItems[lowIndex][0]
+    if (lastCandidate < encoded)
+      return lowIndex
+    return lowIndex - 1
   }
 
   #getChildIndex(name) {
