@@ -1,4 +1,4 @@
-class ShardLoader {
+class ShardMap {
   // Represents a TreeMap<String, Object>
   constructor(baseurl) {
     this.baseurl = baseurl
@@ -10,12 +10,12 @@ class ShardLoader {
   // returns the item with key `name`, or null if none exists
   async get(name, logger) {
     if (logger) {
-      logger("ShardLoader getting " + name)
+      logger("ShardMap getting " + name)
     }
     let encoded = name
     let result = await this.#getEncoded(encoded, logger)
     if (logger) {
-      logger("ShardLoader.load(" + name + ") = " + result)
+      logger("ShardMap.load(" + name + ") = " + result)
     }
     return result
   }
@@ -45,7 +45,7 @@ class ShardLoader {
   // finds the entries having keys near `name` and returns them
   async getNeighborhoodEntries(name, numBefore, numAfter, logger) {
     if (logger) {
-      logger("ShardLoader getting " + numBefore + " items before and " + numAfter + " items after " + name)
+      logger("ShardMap getting " + numBefore + " items before and " + numAfter + " items after " + name)
     }
     let encoded = name
     let before = await this.#getNeighborhoodEncodedBefore(encoded, numBefore, logger)
@@ -58,7 +58,7 @@ class ShardLoader {
       result.push(item)
     }
     if (logger) {
-      logger("ShardLoader.getNeighborhoodEntries(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
+      logger("ShardMap.getNeighborhoodEntries(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
       for (var entry of result) {
         logger(entry)
       }
@@ -92,7 +92,7 @@ class ShardLoader {
       }
     }
     if (logger) {
-      logger("ShardLoader.getNeighborhoodEncodedBefore(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
+      logger("ShardMap.getNeighborhoodEncodedBefore(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
       logger(results)
     }
     return results
@@ -124,7 +124,7 @@ class ShardLoader {
       }
     }
     if (logger) {
-      logger("ShardLoader.getNeighborhoodEncodedAfter(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
+      logger("ShardMap.getNeighborhoodEncodedAfter(" + encoded + ", " + count + ") in " + this.baseurl + " = " + results.length + " results:")
       logger(results)
     }
     return results
@@ -182,7 +182,7 @@ class ShardLoader {
   #getChildByIndex(index) {
     let child = this.children[index]
     if (child == null) {
-      child = new ShardLoader(this.baseurl + "/" + index)
+      child = new ShardMap(this.baseurl + "/" + index)
       this.children[index] = child
     }
     if (child == null) {
@@ -236,7 +236,7 @@ class ShardLoader {
       }
     } else {
       if (logger) {
-        logger("ShardLoader fetching " + url)
+        logger("ShardMap fetching " + url)
       }
 
       let data = await this.#getData(url)

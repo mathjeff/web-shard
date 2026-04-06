@@ -19,7 +19,7 @@ def readDict(path):
   return data
 
 # splits information into shards
-class Sharder(object):
+class ShardMap(object):
   # dataList is expected to be sorted
   def __init__(self, dataList, targetNumEntriesPerShard):
     # List<Pair<Key, Value>>
@@ -50,7 +50,7 @@ class Sharder(object):
     for i in range(numChildren):
       childEnd = int(len(dataList) * (i + 1) / numChildren)
       childContents = dataList[childStart:childEnd]
-      self.children.append(Sharder(childContents, self.targetNumEntriesPerShard))
+      self.children.append(ShardMap(childContents, self.targetNumEntriesPerShard))
       childStart = childEnd
     print("Split " + str(len(dataList)) + " items into " + str(len(self.children)) + " children")
 
@@ -102,9 +102,9 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
     value = data[key]
     entries.append((key, value))
   print("Building tree")
-  sharder = Sharder(entries, targetNumEntriesPerShard)
+  shardMap = ShardMap(entries, targetNumEntriesPerShard)
   print("saving")
-  sharder.write(outputDir)
+  shardMap.write(outputDir)
   print("saved results to " + str(outputDir))
 
 

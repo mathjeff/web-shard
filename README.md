@@ -4,8 +4,8 @@ Usage looks like this:
 * Run generate.py to split a dictionary into pieces
 * Add the resulting .json files to your website into a subdirectory such as dataSubdir
 * Add loader.json to your website
-* Create a ShardLoader like `loader = new ShardLoader("dataSubdir")`
-* Query a ShardLoader like `loader.getOneEntry("key", optionalLogger)`
+* Create a ShardMap like `loader = new ShardMap("dataSubdir")`
+* Query a ShardMap like `loader.getOneEntry("key", optionalLogger)`
 
 See ./demo.sh for an example of how to generate the data files
 
