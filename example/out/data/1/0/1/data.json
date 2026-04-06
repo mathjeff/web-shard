@@ -1,4 +1,4 @@
 {
-  "childKeys": ["six", "ten"],
-  "contents": []
+  "childKeys": [],
+  "contents": [["negative ten", "-10"], ["negative three", "-3"]]
 }

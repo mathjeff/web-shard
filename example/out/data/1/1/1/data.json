@@ -1,4 +1,4 @@
 {
-  "childKeys": ["twelve", "two"],
-  "contents": []
+  "childKeys": [],
+  "contents": [["not a number", "NaN"], ["one", "1"]]
 }
