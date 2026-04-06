@@ -8,19 +8,39 @@
       console.log("domLoaded")
 
       loader = new ShardMap("data")
-      async function getData() {
+      async function getChoices() {
         let queryText = document.getElementById("query").value
         // search for nearby results in our list
         let neighborhood = await loader.getNeighborhoodKeys(queryText, 10, 10)
         return neighborhood
       }
+      async function showResults(query) {
+        let result = await loader.get(query)
+        let container = document.getElementById("results")
+        if (result) {
+          container.textContent = query + " is " + result
+        } else {
+          container.textContent = query + " not found"
+        }
+      }
       const autocompleter = new autoComplete({
         selector: "#query",
         data: {
-          src: getData,
+          src: getChoices,
           cache: false
         }
       })
+      autocompleter.input.addEventListener("selection", function (event) {
+        // update search box text to match selection
+        const feedback = event.detail;
+        autocompleter.input.blur();
+        const selection = feedback.selection.value
+        document.querySelector("#query").innerHTML = selection;
+        autocompleter.input.value = selection;
+        console.log(feedback);
+        // show results
+        showResults(selection)
+      });
     })
   </script>
   <div id="content">
@@ -34,5 +54,6 @@
       <h2>Search:</h2>
       <input type="text" id="query"></input>
     </div>
+    <div id="results"></div>
   </div>
 </html>
