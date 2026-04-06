@@ -9,6 +9,4 @@ Usage looks like this:
 
 See ./demo.sh for an example of how to generate the data files
 
-See example/out/data for an example of what the generated data files might look like
-
-See example/src/index.html for an example of how to use these data files from javascript
+See examples/ for examples
