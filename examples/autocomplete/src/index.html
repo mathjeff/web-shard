@@ -4,16 +4,24 @@
   <script type="text/javascript" src="autoComplete.min.js"></script>
   <link href="./autoComplete.css" rel="stylesheet"/>
   <script type="text/javascript">
+    // set up page
     document.addEventListener("DOMContentLoaded", function() {
       console.log("domLoaded")
 
+      // function for getting candidate matches
       loader = new ShardMap("data")
       async function getChoices() {
         let queryText = document.getElementById("query").value
         // search for nearby results in our list
         let neighborhood = await loader.getNeighborhoodKeys(queryText, 10, 10)
+        if (neighborhood.length > 0) {
+          console.log("for query '" + queryText + "', got " + neighborhood.length + " candidates from " + neighborhood[0] + " through " + neighborhood[neighborhood.length - 1])
+        } else {
+          console.log("for query '" + query, + "' found no candidates")
+        }
         return neighborhood
       }
+      // function for showing result
       async function showResults(query) {
         let result = await loader.get(query)
         let container = document.getElementById("results")
@@ -23,6 +31,7 @@
           container.textContent = query + " not found"
         }
       }
+      // object for evaluating candidate matches
       const autocompleter = new autoComplete({
         selector: "#query",
         data: {
