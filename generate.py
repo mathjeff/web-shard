@@ -95,7 +95,7 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
   data = readDict(inputFile)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
   print("sorting")
-  sortedKeys = sorted(data.keys())
+  sortedKeys = sorted(data.keys(), key=str.casefold)
   print("building entries")
   entries = []
   for key in sortedKeys:

@@ -66,6 +66,10 @@ class ShardMap {
     return result
   }
 
+  #compare(a, b) {
+    return a.localeCompare(b, undefined, { sensitivity: "base" })
+  }
+
   // finds the entries having keys equal to or before `name` and returns their values
   async #getNeighborhoodEncodedBefore(encoded, count, logger) {
     await this.#ensureLoaded(logger)
@@ -139,16 +143,16 @@ class ShardMap {
     return results
   }
 
-  // returns the index of the item before the given item
+   // returns the index of the item before the given item
   async #getRootIndexBefore(encoded, count, logger) {
     await this.#ensureLoaded(logger)
     if (this.rootItems.length < 1) {
       return -1
     }
-    if (encoded < this.rootItems[0][0]) {
+    if (this.#compare(encoded, this.rootItems[0][0]) < 0) {
       return -1
     }
-    if (encoded >= this.rootItems[this.rootItems.length - 1][0]) {
+    if (this.#compare(encoded, this.rootItems[this.rootItems.length - 1][0]) >= 0) {
       return this.rootItems.length - 1
     }
     var lowIndex = 0
@@ -159,21 +163,21 @@ class ShardMap {
       if (encoded == candidate) {
         return middleIndex
       }
-      if (encoded < candidate) {
+      if (this.#compare(encoded, candidate) < 0) {
         highIndex = middleIndex - 1
       } else {
         lowIndex = middleIndex + 1
       }
     }
     let lastCandidate = this.rootItems[lowIndex][0]
-    if (lastCandidate < encoded)
+    if (this.#compare(lastCandidate, encoded) < 0)
       return lowIndex
     return lowIndex - 1
   }
 
   #getChildIndex(name) {
     for (var i = 0; i < this.childKeys.length; i++) {
-      if (this.childKeys[i] >= name)
+      if (this.#compare(this.childKeys[i], name) >= 0)
         return i
     }
     return this.childKeys.length - 1
