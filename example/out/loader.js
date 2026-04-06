@@ -238,8 +238,7 @@ class ShardLoader {
       this.childKeys = data["childKeys"]
       this.children = {}
       if (logger) {
-        logger("rootItems.length = " + this.rootItems.length + " in " + this.baseurl)
-        logger("num child keys = " + this.children.length + " in " + this.baseurl)
+        logger("fetch result for " + this.baseurl + ": " + this.childKeys.length + " children, " + this.rootItems.length + " items")
       }
     }
   }
