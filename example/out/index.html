@@ -8,17 +8,32 @@
       document.getElementById("queryText").value = "ten"
       document.getElementById("countBefore").value = "1"
       document.getElementById("countAfter").value = "1"
+      function putResult(content) {
+        document.getElementById("result").textContent = "Latest result: " + content
+      }
       function display(text) {
         document.getElementById("log").innerHTML += text + "<p/>"
       }
-      function doLookup(queryText, countBefore, countAfter) {
-        loader.getNeighborhood(queryText, countBefore, countAfter, display)
-      }
-      document.getElementById("queryButton").onclick = function() {
+      document.getElementById("queryKeysButton").onclick = async function() {
         queryText = document.getElementById("queryText").value
         countBefore = document.getElementById("countBefore").value
         countAfter = document.getElementById("countAfter").value
-        doLookup(queryText, countBefore, countAfter)
+        result = await loader.getNeighborhoodKeys(queryText, countBefore, countAfter, display)
+        putResult(result)
+      }
+      document.getElementById("queryValuesButton").onclick = async function() {
+        queryText = document.getElementById("queryText").value
+        countBefore = document.getElementById("countBefore").value
+        countAfter = document.getElementById("countAfter").value
+        result = await loader.getNeighborhoodValues(queryText, countBefore, countAfter, display)
+        putResult(result)
+      }
+      document.getElementById("queryEntriesButton").onclick = async function() {
+        queryText = document.getElementById("queryText").value
+        countBefore = document.getElementById("countBefore").value
+        countAfter = document.getElementById("countAfter").value
+        result = await loader.getNeighborhoodEntries(queryText, countBefore, countAfter, display)
+        putResult(result)
       }
     })
   </script>
@@ -33,7 +48,11 @@
       <div>Request count after:
         <input type="text" id="countAfter"/>
       </div>
-      <button id="queryButton">run query</button>
+      <button id="queryKeysButton">get nearby keys</button>
+      <button id="queryValuesButton">get nearby values</button>
+      <button id="queryEntriesButton">get nearby entries</button>
+    </div>
+    <div id="result">
     </div>
     <div id="log">
     </div>

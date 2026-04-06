@@ -13,9 +13,6 @@ class ShardLoader {
       logger("ShardLoader getting " + name)
     }
     let encoded = name
-    if (logger) {
-      logger("ShardLoader encoded " + name + " as " + encoded)
-    }
     let result = await this.#getEncoded(encoded, logger)
     if (logger) {
       logger("ShardLoader.load(" + name + ") = " + result)
@@ -23,15 +20,34 @@ class ShardLoader {
     return result
   }
 
+  // finds the entries having keys near `name` and returns their keys
+  async getNeighborhoodKeys(name, numBefore, numAfter, logger) {
+    let entries = await this.getNeighborhoodEntries(name, numBefore, numAfter, logger)
+    let results = []
+    for (var i = 0; i < entries.length; i++) {
+      let entry = entries[i]
+      results.push(entry[0])
+    }
+    return results
+  }
+
   // finds the entries having keys near `name` and returns their values
-  async getNeighborhood(name, numBefore, numAfter, logger) {
+  async getNeighborhoodValues(name, numBefore, numAfter, logger) {
+    let entries = await this.getNeighborhoodEntries(name, numBefore, numAfter, logger)
+    let results = []
+    for (var i = 0; i < entries.length; i++) {
+      let entry = entries[i]
+      results.push(entry[1])
+    }
+    return results
+  }
+
+  // finds the entries having keys near `name` and returns them
+  async getNeighborhoodEntries(name, numBefore, numAfter, logger) {
     if (logger) {
       logger("ShardLoader getting " + numBefore + " items before and " + numAfter + " items after " + name)
     }
     let encoded = name
-    if (logger) {
-      logger("ShardLoader encoded " + name + " as " + encoded)
-    }
     let before = await this.#getNeighborhoodEncodedBefore(encoded, numBefore, logger)
     let after = await this.#getNeighborhoodEncodedAfter(encoded, numAfter, logger)
     var result = []
@@ -42,8 +58,10 @@ class ShardLoader {
       result.push(item)
     }
     if (logger) {
-      logger("ShardLoader.getNeighborhood(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
-      logger(result)
+      logger("ShardLoader.getNeighborhoodEntries(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
+      for (var entry of result) {
+        logger(entry)
+      }
     }
     return result
   }
@@ -57,7 +75,7 @@ class ShardLoader {
       let startIndex = endIndex - count
       if (startIndex < 0)
         startIndex = 0
-      results = await this.#getValueRange(startIndex, endIndex, logger)
+      results = await this.#getEntryRange(startIndex, endIndex, logger)
     } else {
       let childIndex = this.#getChildIndex(encoded)
       while (true) {
@@ -89,7 +107,7 @@ class ShardLoader {
       let endIndex = startIndex + count
       if (endIndex > this.rootItems.length)
         endIndex = this.rootItems.length
-      results = await this.#getValueRange(startIndex, endIndex, logger)
+      results = await this.#getEntryRange(startIndex, endIndex, logger)
     } else {
       let childIndex = this.#getChildIndex(encoded)
       while (true) {
@@ -112,11 +130,11 @@ class ShardLoader {
     return results
   }
 
-  async #getValueRange(startInclusive, endExclusive, logger) {
+  async #getEntryRange(startInclusive, endExclusive, logger) {
     await this.#ensureLoaded(logger)
     let results = []
     for (var i = startInclusive; i < endExclusive; i++) {
-      results.push(this.rootItems[i][1])
+      results.push(this.rootItems[i])
     }
     return results
   }
