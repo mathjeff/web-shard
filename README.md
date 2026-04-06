@@ -3,7 +3,7 @@ This project makes it easy to split a json dictionary into pieces and lazily req
 Usage looks like this:
 * Run generate.py to split a dictionary into pieces
 * Add the resulting .json files to your website into a subdirectory such as dataSubdir
-* Add loader.json to your website
+* Add web-shard.js to your website
 * Create a ShardMap like `loader = new ShardMap("dataSubdir")`
 * Query a ShardMap like `loader.getOneEntry("key", optionalLogger)`
 
