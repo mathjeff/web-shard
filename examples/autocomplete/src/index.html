@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html>
+  <script type="text/javascript" src="web-shard.js"></script>
+  <script type="text/javascript" src="autoComplete.min.js"></script>
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+      console.log("domLoaded")
+
+      loader = new ShardMap("data")
+      async function getData() {
+        let queryText = document.getElementById("query").value
+        // search for nearby results in our list
+        let neighborhood = await loader.getNeighborhoodKeys(queryText, 10, 10)
+        return neighborhood
+      }
+      const autocompleter = new autoComplete({
+        selector: "#query",
+        data: {
+          src: getData,
+          cache: false
+        }
+      })
+    })
+  </script>
+  <div id="content">
+    <h1>Webshard Autocomplete Demo</h1>
+    <div id="instructions">
+      This website converts from words (like 'ten') to numbers (like 10).<br/>
+      This website uses a lazy sorted map from word to number.<br/>
+      This website also can find other entries that are alphabetically nearby, to help with spelling mistakes</br>
+    </div>
+    <div id="controls">
+      <h2>Search:</h2>
+      <input type="text" id="query"></input>
+    </div>
+  </div>
+</html>
