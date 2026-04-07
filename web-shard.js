@@ -24,7 +24,7 @@ class ShardMap {
   async getNeighborhoodKeys(name, numBefore, numAfter, logger) {
     let entries = await this.getNeighborhoodEntries(name, numBefore, numAfter, logger)
     let results = []
-    for (var i = 0; i < entries.length; i++) {
+    for (let i = 0; i < entries.length; i++) {
       let entry = entries[i]
       results.push(entry[0])
     }
@@ -35,7 +35,7 @@ class ShardMap {
   async getNeighborhoodValues(name, numBefore, numAfter, logger) {
     let entries = await this.getNeighborhoodEntries(name, numBefore, numAfter, logger)
     let results = []
-    for (var i = 0; i < entries.length; i++) {
+    for (let i = 0; i < entries.length; i++) {
       let entry = entries[i]
       results.push(entry[1])
     }
@@ -50,16 +50,16 @@ class ShardMap {
     let encoded = name
     let before = await this.#getNeighborhoodEncodedBefore(encoded, numBefore, logger)
     let after = await this.#getNeighborhoodEncodedAfter(encoded, numAfter, logger)
-    var result = []
-    for (var item of before) {
+    let result = []
+    for (let item of before) {
       result.push(item)
     }
-    for (var item of after) {
+    for (let item of after) {
       result.push(item)
     }
     if (logger) {
       logger("ShardMap.getNeighborhoodEntries(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
-      for (var entry of result) {
+      for (let entry of result) {
         logger(entry)
       }
     }
@@ -67,7 +67,7 @@ class ShardMap {
   }
 
   #compare(a, b) {
-    var result = 0
+    let result = 0
     if (a.toLowerCase() < b.toLowerCase())
       result = -1
     if (a.toLowerCase() > b.toLowerCase())
@@ -78,7 +78,7 @@ class ShardMap {
   // finds the <count> entries having keys before `name` and returns their values
   async #getNeighborhoodEncodedBefore(encoded, count, logger) {
     await this.#ensureLoaded(logger)
-    var results = []
+    let results = []
     if (this.rootItems.length > 0) {
       let endIndex = await this.#getRootIndexAfter(encoded, logger)
       if (logger) {
@@ -113,7 +113,7 @@ class ShardMap {
   // finds the <count> entries having keys equal to or after `name` and returns their values
   async #getNeighborhoodEncodedAfter(encoded, count, logger) {
     await this.#ensureLoaded(logger)
-    var results = []
+    let results = []
     if (this.rootItems.length > 0) {
       let startIndex = await this.#getRootIndexAfter(encoded, logger)
       if (startIndex < 0)
@@ -147,7 +147,7 @@ class ShardMap {
   async #getEntryRange(startInclusive, endExclusive, logger) {
     await this.#ensureLoaded(logger)
     let results = []
-    for (var i = startInclusive; i < endExclusive; i++) {
+    for (let i = startInclusive; i < endExclusive; i++) {
       results.push(this.rootItems[i])
     }
     return results
@@ -165,8 +165,8 @@ class ShardMap {
     if (this.#compare(encoded, this.rootItems[this.rootItems.length - 1][0]) > 0) {
       return this.rootItems.length
     }
-    var lowIndex = 0
-    var highIndex = this.rootItems.length
+    let lowIndex = 0
+    let highIndex = this.rootItems.length
     while (highIndex >= lowIndex) {
       let middleIndex = Math.floor((lowIndex + highIndex) / 2)
       let candidate = this.rootItems[middleIndex][0]
@@ -186,7 +186,7 @@ class ShardMap {
   }
 
   #getChildIndex(name) {
-    for (var i = 0; i < this.childKeys.length; i++) {
+    for (let i = 0; i < this.childKeys.length; i++) {
       if (this.#compare(this.childKeys[i], name) >= 0)
         return i
     }
@@ -214,7 +214,7 @@ class ShardMap {
   }
 
   #getRootEntryEncoded(name, logger) {
-    for (var entry of this.rootItems) {
+    for (let entry of this.rootItems) {
       let candidateName = entry[0]
       if (candidateName == name)
         return entry[1]
