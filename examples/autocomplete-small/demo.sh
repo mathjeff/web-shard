@@ -23,4 +23,4 @@ echo
 echo "Starting a webserver to show the website"
 echo
 
-python -m http.server
+python3 -m http.server

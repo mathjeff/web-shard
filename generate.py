@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/python3
 
 import base64, collections, gzip, json, math, os, shutil, sys
 
