@@ -51,13 +51,24 @@ class ShardMap {
     }
     let encoded = name
     let before = await this.#getNeighborhoodEncodedBefore(encoded, numBefore, logger)
-    let after = await this.#getNeighborhoodEncodedAfter(encoded, numAfter, logger)
+    let after = await this.#getNeighborhoodEncodedAfter(encoded, numAfter + 1, logger)
     let result = []
+    // add before items
     for (let item of before) {
       result.push(item)
     }
-    for (let item of after) {
-      result.push(item)
+    // add target items and items after it
+    if (after.length > 0) {
+      // check how many items to include
+      let endIndex = numAfter + 1
+      if (this.#compare(name, after[0][0]) != 0)
+        endIndex = numAfter // item not found
+      if (endIndex >= after.length)
+        endIndex = after.length
+      // add items
+      for (let i = 0; i < endIndex; i++) {
+        result.push(after[i])
+      }
     }
     if (logger) {
       logger("ShardMap.getNeighborhoodEntries(" + name + ", " + numBefore + ", " + numAfter + ") = " + result.length + " results:")
