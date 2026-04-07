@@ -13,7 +13,7 @@ def usage(message = None):
   sys.exit(1)
 
 def readFile(path):
-  with open(path) as f:
+  with open(path, encoding = 'utf-8') as f:
     return json.load(f)
 
 def readDict(path):
