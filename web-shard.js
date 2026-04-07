@@ -44,6 +44,8 @@ class ShardMap {
 
   // finds the entries having keys near `name` and returns them
   async getNeighborhoodEntries(name, numBefore, numAfter, logger) {
+    numBefore = parseInt(numBefore)
+    numAfter = parseInt(numAfter)
     if (logger) {
       logger("ShardMap getting " + numBefore + " items before and " + numAfter + " items after " + name)
     }
