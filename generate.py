@@ -3,7 +3,11 @@
 import base64, collections, gzip, json, math, os, shutil, sys
 
 def usage(message = None):
-  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite]")
+  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite] [--branching-factor <factor>] [--entries-per-shard <count>]")
+  print("Reads a data file, creates a TreeMap, splits it into pieces, and writes each piece to a file")
+  print("  --overwrite If the output dir already exists, delete it first")
+  print("  --branching-factor <factor> Each node in the tree can have up to <factor> child nodes")
+  print("  --entries-per-shard <count> Each leaf node in the tree can store up to <count> entries")
   if message is not None:
     print(message)
   sys.exit(1)
@@ -21,13 +25,14 @@ def readDict(path):
 # splits information into shards
 class ShardMap(object):
   # dataList is expected to be sorted
-  def __init__(self, dataList, targetNumEntriesPerShard):
+  def __init__(self, dataList, targetBranchingFactor, targetNumEntriesPerShard):
     # List<Pair<Key, Value>>
     self.rootItems = []
     self.children = []
     self.minKey = dataList[0][0]
     self.maxKey = dataList[-1][0]
     # choose sizes
+    self.targetBranchingFactor = targetBranchingFactor
     self.targetNumEntriesPerShard = targetNumEntriesPerShard
     self.putAll(dataList)
 
@@ -41,16 +46,17 @@ class ShardMap(object):
     self.rootItems = dataList
 
   def saveInChildren(self, dataList):
-    print("Splitting " + str(len(dataList)) + " items into about " + str(self.targetNumEntriesPerShard) + " children")
+    print("Splitting " + str(len(dataList)) + " items into about " + str(self.targetBranchingFactor) + " children")
     # estimate the number of nodes we need for this amount of data
-    requiredDepth = int(math.log(len(dataList), self.targetNumEntriesPerShard) + 1)
+    numLeafNodes = len(dataList) / self.targetNumEntriesPerShard
+    requiredDepth = int(math.log(numLeafNodes, self.targetBranchingFactor) + 1)
     # try to put about the same amount of data in each node
-    numChildren = int(math.pow(len(dataList), 1 / requiredDepth) + 1)
+    numChildren = int(math.pow(numLeafNodes, 1 / requiredDepth) + 1)
     childStart = 0
     for i in range(numChildren):
       childEnd = int(len(dataList) * (i + 1) / numChildren)
       childContents = dataList[childStart:childEnd]
-      self.children.append(ShardMap(childContents, self.targetNumEntriesPerShard))
+      self.children.append(ShardMap(childContents, self.targetBranchingFactor, self.targetNumEntriesPerShard))
       childStart = childEnd
     print("Split " + str(len(dataList)) + " items into " + str(len(self.children)) + " children")
 
@@ -84,7 +90,7 @@ class ShardMap(object):
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
 
-def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
+def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, overwrite):
   if os.path.exists(outputDir):
     if overwrite:
       shutil.rmtree(outputDir)
@@ -102,7 +108,7 @@ def run(inputFile, outputDir, targetNumEntriesPerShard, overwrite):
     value = data[key]
     entries.append((key, value))
   print("Building tree")
-  shardMap = ShardMap(entries, targetNumEntriesPerShard)
+  shardMap = ShardMap(entries, targetBranchingFactor, targetNumEntriesPerShard)
   print("saving")
   shardMap.write(outputDir)
   print("saved results to " + str(outputDir))
@@ -113,6 +119,7 @@ def main(args):
   outputDir = None
   overwrite = False
   numEntriesPerShard = 4096
+  branchingFactor = 256
   while len(args) > 0:
     arg = args[0]
     args = args[1:]
@@ -131,6 +138,10 @@ def main(args):
       numEntriesPerShard = int(args[0])
       args = args[1:]
       continue
+    if arg == "--branching-factor":
+      branchingFactor = int(args[0])
+      args = args[1:]
+      continue
     raise Exception("Unrecognized argument " + arg)
   if inputFile is None:
     usage("--input-data is required")
@@ -138,7 +149,7 @@ def main(args):
     usage("--out-site is required")
   if numEntriesPerShard is None:
     usage("--entries-per-shard is required")
-  run(inputFile, outputDir, numEntriesPerShard, overwrite)
+  run(inputFile, outputDir, branchingFactor, numEntriesPerShard, overwrite)
 
 if __name__ == "__main__":
   main(sys.argv[1:])

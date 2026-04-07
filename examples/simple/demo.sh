@@ -4,7 +4,7 @@ cd "$(dirname $0)"
 projectRoot="./"
 repoRoot="../../"
 
-$repoRoot/generate.py --input-data $projectRoot/src/data.json --out-site $projectRoot/out/data --overwrite --entries-per-shard 4
+$repoRoot/generate.py --input-data $projectRoot/src/data.json --out-site $projectRoot/out/data --overwrite --entries-per-shard 4 --branching-factor 4
 cp $repoRoot/web-shard.js $projectRoot/out/
 cp $projectRoot/src/index.html $projectRoot/out/
 
