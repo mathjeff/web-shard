@@ -75,12 +75,15 @@ class ShardMap {
     return result
   }
 
-  // finds the entries having keys equal to or before `name` and returns their values
+  // finds the <count> entries having keys before `name` and returns their values
   async #getNeighborhoodEncodedBefore(encoded, count, logger) {
     await this.#ensureLoaded(logger)
     var results = []
     if (this.rootItems.length > 0) {
-      let endIndex = await this.#getRootIndexBefore(encoded, logger) + 1
+      let endIndex = await this.#getRootIndexAfter(encoded, logger)
+      if (logger) {
+        logger("getNeighborhoodEncodedBefore " + encoded + " got end index " + endIndex)
+      }
       let startIndex = endIndex - count
       if (startIndex < 0)
         startIndex = 0
@@ -107,12 +110,14 @@ class ShardMap {
     return results
   }
 
-  // finds the entries having keys after `name` and returns their values
+  // finds the <count> entries having keys equal to or after `name` and returns their values
   async #getNeighborhoodEncodedAfter(encoded, count, logger) {
     await this.#ensureLoaded(logger)
     var results = []
     if (this.rootItems.length > 0) {
-      let startIndex = await this.#getRootIndexBefore(encoded, logger) + 1
+      let startIndex = await this.#getRootIndexAfter(encoded, logger)
+      if (startIndex < 0)
+        startIndex = 0
       let endIndex = startIndex + count
       if (endIndex > this.rootItems.length)
         endIndex = this.rootItems.length
@@ -148,8 +153,8 @@ class ShardMap {
     return results
   }
 
-   // returns the index of the item before the given item
-  async #getRootIndexBefore(encoded, count, logger) {
+   // returns the index of the item at or after the given item
+  async #getRootIndexAfter(encoded, count, logger) {
     await this.#ensureLoaded(logger)
     if (this.rootItems.length < 1) {
       return -1
@@ -157,8 +162,8 @@ class ShardMap {
     if (this.#compare(encoded, this.rootItems[0][0]) < 0) {
       return -1
     }
-    if (this.#compare(encoded, this.rootItems[this.rootItems.length - 1][0]) >= 0) {
-      return this.rootItems.length - 1
+    if (this.#compare(encoded, this.rootItems[this.rootItems.length - 1][0]) > 0) {
+      return this.rootItems.length
     }
     var lowIndex = 0
     var highIndex = this.rootItems.length
@@ -174,10 +179,10 @@ class ShardMap {
         lowIndex = middleIndex + 1
       }
     }
-    let lastCandidate = this.rootItems[lowIndex][0]
-    if (this.#compare(lastCandidate, encoded) < 0)
-      return lowIndex
-    return lowIndex - 1
+    let lastCandidate = this.rootItems[highIndex][0]
+    if (this.#compare(lastCandidate, encoded) > 0)
+      return highIndex
+    return highIndex + 1
   }
 
   #getChildIndex(name) {
