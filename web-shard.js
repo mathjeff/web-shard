@@ -67,7 +67,12 @@ class ShardMap {
   }
 
   #compare(a, b) {
-    return a.localeCompare(b, undefined, { sensitivity: "base" })
+    var result = 0
+    if (a.toLowerCase() < b.toLowerCase())
+      result = -1
+    if (a.toLowerCase() > b.toLowerCase())
+      result = 1
+    return result
   }
 
   // finds the entries having keys equal to or before `name` and returns their values
