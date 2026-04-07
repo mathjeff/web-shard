@@ -1,0 +1,5 @@
+This directory contains a collection of examples for using web-shard
+
+The deps/ directory contains dependencies of the examples
+
+cd into an example directory and run ./demo.sh to try it
