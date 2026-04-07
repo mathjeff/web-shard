@@ -9,15 +9,14 @@ class ShardMap {
 
   // returns the item with key `name`, or null if none exists
   async get(name, logger) {
-    if (logger) {
-      logger("ShardMap getting " + name)
+    let neighborhood = await this.getNeighborhoodEntries(name, 0, 0, logger)
+    if (neighborhood.length > 0) {
+      let candidate = neighborhood[0]
+      if (this.#compare(candidate[0], name) == 0) {
+        return candidate[1]
+      }
     }
-    let encoded = name
-    let result = await this.#getEncoded(encoded, logger)
-    if (logger) {
-      logger("ShardMap.load(" + name + ") = " + result)
-    }
-    return result
+    return null
   }
 
   // finds the entries having keys near `name` and returns their keys
@@ -226,15 +225,6 @@ class ShardMap {
     return this.#getChildByIndex(index)
   }
 
-  #getRootEntryEncoded(name, logger) {
-    for (let entry of this.rootItems) {
-      let candidateName = entry[0]
-      if (candidateName == name)
-        return entry[1]
-    }
-    return null
-  }
-
   async #getData(url) {
     try {
       let response = await fetch(url)
@@ -274,15 +264,6 @@ class ShardMap {
         logger("fetch result for " + this.baseurl + ": " + this.childKeys.length + " children, " + this.rootItems.length + " items")
       }
     }
-  }
-
-  async #getEncoded(name, logger) {
-    await this.#ensureLoaded(logger)
-    if (this.rootItems.length > 0) {
-      return this.#getRootEntryEncoded(name, logger)
-    }
-    let child = this.#getChild(name)
-    return child.#getEncoded(name, logger)
   }
 
   #decodeKeys(items) {
