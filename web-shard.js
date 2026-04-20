@@ -7,8 +7,15 @@ class ShardMap {
     this.children = {}
   }
 
+  isString(query) {
+    return (typeof query === 'string' || query instanceof String)
+  }
+
   // returns the item with key `name`, or null if none exists
   async get(name, logger) {
+    if (!this.isString(name)) {
+      throw new Error("key " + name + " must be string")
+    }
     let neighborhood = await this.getNeighborhoodEntries(name, 0, 0, logger)
     if (neighborhood.length > 0) {
       let candidate = neighborhood[0]
@@ -43,6 +50,9 @@ class ShardMap {
 
   // finds the entries having keys near `name` and returns them
   async getNeighborhoodEntries(name, numBefore, numAfter, logger) {
+    if (!this.isString(name)) {
+      throw new Exception("key " + name + " must be string")
+    }
     numBefore = parseInt(numBefore)
     numAfter = parseInt(numAfter)
     if (logger) {
