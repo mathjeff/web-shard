@@ -203,7 +203,7 @@ class ShardMap {
       }
     }
     let lastCandidate = this.rootItems[highIndex][0]
-    if (this.#compare(lastCandidate, encoded) > 0)
+    if (this.#compare(lastCandidate, encoded) >= 0)
       return highIndex
     return highIndex + 1
   }
