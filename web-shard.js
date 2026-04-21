@@ -5,6 +5,7 @@ class ShardMap {
     this.rootItems = null
     this.childKeys = null
     this.children = {}
+    this.loadRequest = null
   }
 
   isString(query) {
@@ -261,18 +262,31 @@ class ShardMap {
       if (logger) {
         logger("Already loaded " + url)
       }
-    } else {
+      return
+    }
+    if (this.loadRequest != null) {
       if (logger) {
-        logger("ShardMap fetching " + url)
+        logger("ShardMap waiting for existing load of " + url)
       }
+      await this.loadRequest
+      return
+    }
+    this.loadRequest = this.#loadData(url, logger)
+    await this.loadRequest
+    this.loadRequest = null
+  }
 
-      let data = await this.#getData(url)
-      this.rootItems = data["contents"]
-      this.childKeys = data["childKeys"]
-      this.children = {}
-      if (logger) {
-        logger("fetch result for " + this.baseurl + ": " + this.childKeys.length + " children, " + this.rootItems.length + " items")
-      }
+  async #loadData(url, logger) {
+    if (logger) {
+      logger("ShardMap fetching " + url)
+    }
+
+    let data = await this.#getData(url)
+    this.children = {}
+    this.childKeys = data["childKeys"]
+    this.rootItems = data["contents"]
+    if (logger) {
+      logger("fetch result for " + this.baseurl + ": " + this.childKeys.length + " children, " + this.rootItems.length + " items")
     }
   }
 
