@@ -101,7 +101,7 @@ def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, o
   data = readDict(inputFile)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
   print("sorting")
-  sortedKeys = sorted(data.keys(), key=str.lower)
+  sortedKeys = sorted(data.keys(), key=lambda x:(x.lower(), x))
   print("building entries")
   entries = []
   for key in sortedKeys:

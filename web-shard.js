@@ -92,9 +92,13 @@ class ShardMap {
   #compare(a, b) {
     let result = 0
     if (a.toLowerCase() < b.toLowerCase())
-      result = -1
+      return -1
     if (a.toLowerCase() > b.toLowerCase())
-      result = 1
+      return 1
+    if (a < b)
+      return -1
+    if (a > b)
+      return 1
     return result
   }
 
