@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
-import base64, collections, gzip, json, math, os, shutil, sys
+import base64, collections, gzip, hashlib, json, math, os, shutil, sys
 
 def usage(message = None):
-  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite] [--branching-factor <factor>] [--entries-per-shard <count>]")
+  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite] [--unique-subdir] [--branching-factor <factor>] [--entries-per-shard <count>]")
   print("Reads a data file, creates a TreeMap, splits it into pieces, and writes each piece to a file")
   print("  --overwrite If the output dir already exists, delete it first")
+  print("  --unique-subdir Put the data into a subdirectory of <out-dir>.")
+  print("     Different runs with different data are expected to choose different subdirectories. If the calling web page is updated to point to this new subdirectory, it can clarify that the data has changed and should be re-fetched")
   print("  --branching-factor <factor> Each node in the tree can have up to <factor> child nodes")
   print("  --entries-per-shard <count> Each leaf node in the tree can store up to <count> entries")
   if message is not None:
@@ -21,6 +23,16 @@ def readDict(path):
   if not isinstance(data, dict):
     raise Exception("Data at " + path + " is " + str(type(data).__name__) + ", but dict is required")
   return data
+
+def hashFile(path):
+  hasher = hashlib.new("sha1")
+  with open(path, "rb") as file:
+    while True:
+      section = file.read(8192)
+      if not section:
+        break
+      hasher.update(section)
+  return str(hasher.hexdigest())
 
 # splits information into shards
 class ShardMap(object):
@@ -90,15 +102,25 @@ class ShardMap(object):
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
 
-def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, overwrite):
+def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, overwrite, uniqueSubdir):
   if os.path.exists(outputDir):
     if overwrite:
       shutil.rmtree(outputDir)
     else:
       raise Exception("Output dir " + str(outputDir) + " already exists! Pass --overwrite to automatically remove it")
-  print("transforming " + inputFile + " into " + outputDir)
   print("loading " + inputFile)
   data = readDict(inputFile)
+  if uniqueSubdir:
+    print("hashing data")
+    hashText = hashFile(inputFile)
+    # We want to make it easy to share when the data has changed, so we allow moving the data into a subdir based on its hash
+    # However, we might make a lot of requests that contain this hash in the url, so we don't want the hash to be too long
+    hashText = hashText[:8]
+    print("computed hash " + hashText)
+    versionedOutputDir = os.path.join(outputDir, hashText)
+  else:
+    versionedOutputDir = outputDir
+  print("transforming " + inputFile + " into " + versionedOutputDir)
   print("loaded " + str(len(data)) + " entries from " + str(inputFile))
   print("sorting")
   sortedKeys = sorted(data.keys(), key=lambda x:(x.lower(), x))
@@ -110,14 +132,15 @@ def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, o
   print("Building tree")
   shardMap = ShardMap(entries, targetBranchingFactor, targetNumEntriesPerShard)
   print("saving")
-  shardMap.write(outputDir)
-  print("saved results to " + str(outputDir))
+  shardMap.write(versionedOutputDir)
+  print("saved results to " + str(versionedOutputDir))
 
 
 def main(args):
   inputFile = None
   outputDir = None
   overwrite = False
+  uniqueSubdir = False
   numEntriesPerShard = 4096
   branchingFactor = 256
   while len(args) > 0:
@@ -134,6 +157,9 @@ def main(args):
     if arg == "--overwrite":
       overwrite = True
       continue
+    if arg == "--unique-subdir":
+      uniqueSubdir = True
+      continue
     if arg == "--entries-per-shard":
       numEntriesPerShard = int(args[0])
       args = args[1:]
@@ -149,7 +175,7 @@ def main(args):
     usage("--out-site is required")
   if numEntriesPerShard is None:
     usage("--entries-per-shard is required")
-  run(inputFile, outputDir, branchingFactor, numEntriesPerShard, overwrite)
+  run(inputFile, outputDir, branchingFactor, numEntriesPerShard, overwrite, uniqueSubdir)
 
 if __name__ == "__main__":
   main(sys.argv[1:])
