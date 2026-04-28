@@ -3,13 +3,13 @@
 import base64, collections, gzip, hashlib, json, math, os, shutil, sys
 
 def usage(message = None):
-  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite] [--unique-subdir] [--branching-factor <factor>] [--entries-per-shard <count>]")
+  print("Usage: ./generate.py --input-data <file.json> --out-site <out-dir> [--overwrite] [--unique-subdir] [--branching-factor <factor>] [--bytes-per-shard <count>]")
   print("Reads a data file, creates a TreeMap, splits it into pieces, and writes each piece to a file")
   print("  --overwrite If the output dir already exists, delete it first")
   print("  --unique-subdir Put the data into a subdirectory of <out-dir>.")
   print("     Different runs with different data are expected to choose different subdirectories. If the calling web page is updated to point to this new subdirectory, it can clarify that the data has changed and should be re-fetched")
   print("  --branching-factor <factor> Each node in the tree can have up to <factor> child nodes")
-  print("  --entries-per-shard <count> Each leaf node in the tree can store up to <count> entries")
+  print("  --bytes-per-shard <count> Each leaf node in the tree can store up to <count> entries")
   if message is not None:
     print(message)
   sys.exit(1)
@@ -37,7 +37,7 @@ def hashFile(path):
 # splits information into shards
 class ShardMap(object):
   # dataList is expected to be sorted
-  def __init__(self, dataList, targetBranchingFactor, targetNumEntriesPerShard):
+  def __init__(self, dataList, targetBranchingFactor, targetNumBytesPerShard):
     # List<Pair<Key, Value>>
     self.rootItems = []
     self.children = []
@@ -45,11 +45,24 @@ class ShardMap(object):
     self.maxKey = dataList[-1][0]
     # choose sizes
     self.targetBranchingFactor = targetBranchingFactor
-    self.targetNumEntriesPerShard = targetNumEntriesPerShard
+    self.targetNumBytesPerShard = targetNumBytesPerShard
+    self.estimatedTotalSize = self.estimateTotalSize(dataList)
+    # store
     self.putAll(dataList)
 
+  def estimateTotalSize(self, dataList):
+    cumulativeSize = 1
+    for i in range(len(dataList)):
+      item = dataList[i]
+      text = json.dumps(item)
+      cumulativeSize += len(text)
+      if cumulativeSize > self.targetNumBytesPerShard:
+        estimatedSizePerEntry = cumulativeSize / (i + 1)
+        return len(dataList) * estimatedSizePerEntry
+    return cumulativeSize
+
   def putAll(self, dataList):
-    if len(dataList) <= self.targetNumEntriesPerShard:
+    if self.estimatedTotalSize <= self.targetNumBytesPerShard or len(dataList) < 2:
       self.saveInSelf(dataList)
     else:
       self.saveInChildren(dataList)
@@ -60,15 +73,15 @@ class ShardMap(object):
   def saveInChildren(self, dataList):
     print("Splitting " + str(len(dataList)) + " items into about " + str(self.targetBranchingFactor) + " children")
     # estimate the number of nodes we need for this amount of data
-    numLeafNodes = len(dataList) / self.targetNumEntriesPerShard
+    numLeafNodes = self.estimatedTotalSize / self.targetNumBytesPerShard
     requiredDepth = int(math.log(numLeafNodes, self.targetBranchingFactor) + 1)
     # try to put about the same amount of data in each node
-    numChildren = int(math.pow(numLeafNodes, 1 / requiredDepth) + 1)
+    numChildren = min(int(math.pow(numLeafNodes, 1 / requiredDepth) + 2), len(dataList))
     childStart = 0
     for i in range(numChildren):
       childEnd = int(len(dataList) * (i + 1) / numChildren)
       childContents = dataList[childStart:childEnd]
-      self.children.append(ShardMap(childContents, self.targetBranchingFactor, self.targetNumEntriesPerShard))
+      self.children.append(ShardMap(childContents, self.targetBranchingFactor, self.targetNumBytesPerShard))
       childStart = childEnd
     print("Split " + str(len(dataList)) + " items into " + str(len(self.children)) + " children")
 
@@ -102,7 +115,7 @@ class ShardMap(object):
   def getNextKey(self, item):
     return item[self.childKeyStart:min(self.childKeyEnd, len(item))]
 
-def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, overwrite, uniqueSubdir):
+def run(inputFile, outputDir, targetBranchingFactor, targetNumBytesPerShard, overwrite, uniqueSubdir):
   if os.path.exists(outputDir):
     if overwrite:
       shutil.rmtree(outputDir)
@@ -130,7 +143,7 @@ def run(inputFile, outputDir, targetBranchingFactor, targetNumEntriesPerShard, o
     value = data[key]
     entries.append((key, value))
   print("Building tree")
-  shardMap = ShardMap(entries, targetBranchingFactor, targetNumEntriesPerShard)
+  shardMap = ShardMap(entries, targetBranchingFactor, targetNumBytesPerShard)
   print("saving")
   shardMap.write(versionedOutputDir)
   print("saved results to " + str(versionedOutputDir))
@@ -141,7 +154,7 @@ def main(args):
   outputDir = None
   overwrite = False
   uniqueSubdir = False
-  numEntriesPerShard = 4096
+  numBytesPerShard = 4 * 1024 * 1024
   branchingFactor = 256
   while len(args) > 0:
     arg = args[0]
@@ -160,8 +173,8 @@ def main(args):
     if arg == "--unique-subdir":
       uniqueSubdir = True
       continue
-    if arg == "--entries-per-shard":
-      numEntriesPerShard = int(args[0])
+    if arg == "--bytes-per-shard":
+      numBytesPerShard = int(args[0])
       args = args[1:]
       continue
     if arg == "--branching-factor":
@@ -173,9 +186,9 @@ def main(args):
     usage("--input-data is required")
   if outputDir is None:
     usage("--out-site is required")
-  if numEntriesPerShard is None:
-    usage("--entries-per-shard is required")
-  run(inputFile, outputDir, branchingFactor, numEntriesPerShard, overwrite, uniqueSubdir)
+  if numBytesPerShard is None:
+    usage("--bytes-per-shard is required")
+  run(inputFile, outputDir, branchingFactor, numBytesPerShard, overwrite, uniqueSubdir)
 
 if __name__ == "__main__":
   main(sys.argv[1:])
