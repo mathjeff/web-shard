@@ -249,7 +249,7 @@ class ShardMap {
       let decompressedResponse = await this.decompressResponse(response)
       return await decompressedResponse.json()
     } catch (e) {
-      console.log(e)
+      console.log("Failed to load data from " + url + ": " + e)
       throw e
     }
   }
