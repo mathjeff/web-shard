@@ -105,8 +105,9 @@ class ShardMap(object):
     lines.append('  "contents": ' + self.formatRootItems())
     lines.append('}')
     text = "\n".join(lines)
-    with gzip.open(destFile, 'wt') as f:
-      f.write(text)
+    with open(destFile, 'wb') as f:
+      with gzip.GzipFile("", 'wb', 9, f, mtime=0) as g:
+        g.write(text.encode("utf-8"))
     for i in range(len(self.children)):
       child = self.children[i]
       subdir = destDir + "/" + str(i)
