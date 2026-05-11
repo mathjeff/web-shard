@@ -12,6 +12,11 @@ class ShardMap {
     return (typeof query === 'string' || query instanceof String)
   }
 
+  // asynchronously starts loading some data for this map
+  prefetch() {
+    this.#ensureLoaded() // no need to wait for load to complete
+  }
+
   // returns the item with key `name`, or null if none exists
   async get(name, logger) {
     if (!this.isString(name)) {
